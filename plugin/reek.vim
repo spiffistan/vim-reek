@@ -1,10 +1,12 @@
 " reek.vim - Code smell detector for Ruby in Vim
 " Author: Rainer Borene <https://github.com/rainerborene>
+" Author: Anders Aarsaether <https://github.com/spiffistan>
 " Version: 1.0
 
-if exists('g:loaded_reek') || !executable('reek')
+if !executable('reek') || !has('signs') || !has('ruby')
   finish
 endif
+
 let g:loaded_reek = 1
 
 if !exists('g:reek_always_show')
@@ -20,11 +22,12 @@ if !exists('g:reek_on_loading')
 endif
 
 function! s:Reek()
+  exec 'silent sign unplace Smelly'
   if exists('g:reek_line_limit') && line('$') > g:reek_line_limit
     return
   endif
 
-  let metrics = system("reek -n " . expand("%:p"))
+  let metrics = system("reek " . expand("%:p"))
   let loclist = []
 
   if g:reek_debug
@@ -36,6 +39,8 @@ function! s:Reek()
     if strlen(get(err, 2)) > 1
       for lnum in split(err[1], ', ')
         call add(loclist, { 'bufnr': bufnr('%'), 'lnum': lnum, 'text': err[2] })
+        exec 'sign define Smelly text=i texthl=SignSmelly'
+        exec 'sign place ' . lnum . ' line=' . lnum . ' name=Smelly' . ' buffer=' . bufnr('%') 
       endfor
     end
   endfor
@@ -46,16 +51,16 @@ function! s:Reek()
     if g:reek_always_show
       " Only show location if we are running reek on loading
       if g:reek_on_loading
-        ll
+        " ll
       endif
     endif
   endif
 endfunction
 
 " Function to run reek and display location list
-function s:RunReek()
+function! s:RunReek()
   call s:Reek()
-  lopen
+  " lopen
 endfunction
 
 " Only set up automatic call if we request reek_on_loading
